@@ -2,12 +2,6 @@
 #include "includes.h"
 #endif
 
-#include <GL/glx.h>    /* this includes the necessary X headers */
-#include <GL/gl.h>
-
-#include <X11/X.h>    /* X11 constant (e.g. TrueColor) */
-#include <X11/keysym.h>
-
 bool draw = false;
 
 //Uses opengl's built in vertex methods ( glVertex2i makes a vertex that takes 2 ints, 2f takes 2 floats, 3 for 3d, etc...)
