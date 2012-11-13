@@ -111,12 +111,12 @@ public:
 		bullet_dy = dy;
 	}
 	
-	void changeY( int y )
+	void changeY( float y )
 	{
 		bullet_y += y;
 	}
 	
-	void changeX( int x )
+	void changeX( float x )
 	{
 		bullet_x += x;
 	}			

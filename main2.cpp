@@ -15,9 +15,18 @@ const int CHAR_SIZE = 16;
 const int ENEMY_SIZE = 32;
 const int IMG_SIZE = 20;
 const int BULLET_SIZE = 6;
+//const int BULLET_CENTER = BULLET_SIZE / 2;
 
-int LEVEL = 0;
+Bullet *HEALTHBAR;
+Bullet *HEALTHBAR_BACKGROUND;
+Bullet *HEALTHBAR_BACKGROUND_BACKGROUND;
+
+int HEALTH = 100;
+int LEVEL = 1;
 int SCORE = 0;
+
+Bullet *character;
+bool dead = false;
 
 vector<Enemy> enemies;
 vector<Bullet> enemy_bullets;
@@ -28,17 +37,45 @@ enum MYKEYS
 };
 
 
+void char_hit()
+{
+	HEALTH -= 10;
+	
+	if( HEALTH < 0 )
+	{
+		dead = true;
+	}
+	else
+	{
+		ALLEGRO_BITMAP *health_bmp = al_create_bitmap( HEALTH, 30 );
+		HEALTHBAR->setBitmap( health_bmp );
+	
+		al_set_target_bitmap( HEALTHBAR->getBitmap() );
+		al_clear_to_color( al_map_rgb( 0, 122, 122 ) );
+	}
+}
+
 void add_enemy( void )
 {
-	Enemy *bullet = new Enemy( rand() % SCREEN_W, -( ENEMY_SIZE ), 0, 1 );
-		
+	Enemy *bullet = new Enemy( rand() % ( SCREEN_W - ENEMY_SIZE ) , -( ENEMY_SIZE ), 0, 1 );
+	
+	int bullet_type = rand() % 2;
+	
 	ALLEGRO_BITMAP *bullet_bmp = al_create_bitmap( ENEMY_SIZE, ENEMY_SIZE );
 	bullet->setBitmap( bullet_bmp );
 	
 	al_set_target_bitmap( bullet->getBitmap() );
-	al_clear_to_color( al_map_rgb( 0,255,0 ) );
+	if( bullet_type == 0 )
+	{
+		al_clear_to_color( al_map_rgb( 77,77,77 ) );
+	}
+	else if( bullet_type == 1 )
+	{
+		al_clear_to_color( al_map_rgb( 177, 177, 177 ) );
+	}
 	
 	//bullet->print();
+	bullet->set_bullet_type( bullet_type );
 	
 	enemies.push_back( *bullet );
 }
@@ -65,10 +102,39 @@ void circle_bullets( int enemy_number )
 		bullet->setBitmap( bullet_bmp );
 	
 		al_set_target_bitmap( bullet->getBitmap() );
-		al_clear_to_color( al_map_rgb( 0,255,0 ) );
+		al_clear_to_color( al_map_rgb( 255,0,0 ) );
 		
 		enemy_bullets.push_back( *bullet );	
 	}
+}
+
+void straight_bullet( int enemy_number )
+{
+	int center_x = enemies[ enemy_number ].getX() + ( ENEMY_SIZE / 2 );
+	int center_y = enemies[ enemy_number ].getY() + ( ENEMY_SIZE / 2 );
+	
+	float dx;
+	float dy;
+	float length;
+	
+	dx = character->getX() - center_x;
+	dy = character->getY() - center_y;
+	
+	length = sqrt ( pow( dx, 2 ) + pow( dy, 2 ) );
+	
+	//cout << dy / length << "\n" << ( dx / length ) << endl;
+	int multiple = (rand() % 2) + 1;
+	length = length / multiple;
+	
+	Bullet *bullet = new Bullet( center_x, center_y, dx / length, dy / length );
+	
+	ALLEGRO_BITMAP *bullet_bmp = al_create_bitmap( BULLET_SIZE, BULLET_SIZE );
+	bullet->setBitmap( bullet_bmp );
+
+	al_set_target_bitmap( bullet->getBitmap() );
+	al_clear_to_color( al_map_rgb( 0,255,0 ) );
+	
+	enemy_bullets.push_back( *bullet );	
 }
 
 void move_enemies( void )
@@ -83,9 +149,28 @@ void move_enemies( void )
 			{
 				case 0: 
 					circle_bullets( i );
+					break;
+				case 1:
+					straight_bullet( i );
+					break;
 			}
 		}
 	}
+}
+
+void init( )
+{
+	HEALTH = 110;
+	char_hit();
+	LEVEL = 1;
+	
+	enemies.clear();
+	enemy_bullets.clear();
+	
+	character->setX( SCREEN_W / 2 );
+	character->setY( SCREEN_H - CHAR_SIZE - 10 );
+	
+	dead = false;
 }
 
 int main( int argc, char **argv )
@@ -97,10 +182,11 @@ int main( int argc, char **argv )
 	bool redraw = true;
 	bool key[5] = { false, false, false, false, false };
 
-	srand( time( NULL ) );
+	srand( time( NULL ) );	
 
 	// character object (spot on screen, direction moving )
-	Bullet *character = new Bullet( SCREEN_W / 2.0, SCREEN_H - ( CHAR_SIZE + 10 ), 0, 0 );
+	Bullet *c = new Bullet( SCREEN_W / 2.0, SCREEN_H - ( CHAR_SIZE + 10 ), 0, 0 );
+	character = c;
 	
 	//Bullet *enemy = new Bullet( SCREEN_W / 2.0, ( CHAR_SIZE + 10 ), 0,0 );	
 
@@ -142,8 +228,6 @@ int main( int argc, char **argv )
 	
 	al_start_timer( timer );
 
-	bool doexit = false;
-
 
 	//background stars
 	vector<Bullet> stars;
@@ -169,6 +253,45 @@ int main( int argc, char **argv )
 	
 	int bullet_counter = 0;
 	int enemy_counter = 0;
+	
+	///////////////////////
+	//set health bar
+	
+	Bullet *health = new Bullet( 10, 10, 0, 0 );
+	HEALTHBAR = health;
+	
+	ALLEGRO_BITMAP *health_bmp = al_create_bitmap( 100, 30 );
+	HEALTHBAR->setBitmap( health_bmp );
+	
+	al_set_target_bitmap( HEALTHBAR->getBitmap() );
+	al_clear_to_color( al_map_rgb( 0, 122, 122 ) );
+	
+	// background_background
+	health = new Bullet( 8, 8, 0, 0 );
+	HEALTHBAR_BACKGROUND_BACKGROUND = health;
+	
+	health_bmp = al_create_bitmap( 104, 34 );
+	HEALTHBAR_BACKGROUND_BACKGROUND->setBitmap( health_bmp );
+	
+	al_set_target_bitmap( HEALTHBAR_BACKGROUND_BACKGROUND->getBitmap() );
+	al_clear_to_color( al_map_rgb( 255, 255, 255 ) );
+	
+	//background
+	health = new Bullet( 10, 10, 0, 0 );
+	HEALTHBAR_BACKGROUND = health;
+	
+	health_bmp = al_create_bitmap( 100, 30 );
+	HEALTHBAR_BACKGROUND->setBitmap( health_bmp );
+	
+	al_set_target_bitmap( HEALTHBAR_BACKGROUND->getBitmap() );
+	al_clear_to_color( al_map_rgb( 0, 0, 0 ) );
+	
+	
+	
+	
+	bool hit = false;
+	
+	bool doexit = false;
 	
 	//loop for game
 	while( !doexit )
@@ -245,6 +368,8 @@ int main( int argc, char **argv )
 				}
 			}
 			
+			//	TIMER DINGS
+			
 			for( int i = 0; i < bullets.size(); i++ )
 			{
 				bullets[ i ].changeY( bullets[i].getDY() );
@@ -266,7 +391,7 @@ int main( int argc, char **argv )
 			enemy_counter++;
 			
 			//add enemies
-			if( enemy_counter > 100 )
+			if( enemy_counter > ( 100 / LEVEL ) )
 			{
 				add_enemy();
 				enemy_counter = 0;
@@ -284,6 +409,69 @@ int main( int argc, char **argv )
 				enemy_bullets[i].changeX( enemy_bullets[i].getDX() );
 				enemy_bullets[i].changeY( enemy_bullets[i].getDY() );
 			}
+			
+			//for getting rid of old bullets
+			if( bullets.size() > 0 && bullets[0].getY() < 0 )
+			{
+				newBullets.clear();
+				for( int i = 0; i < bullets.size(); i++ )
+				{
+					if( bullets[i].getY() > 0 )
+					{
+						newBullets.push_back( bullets[i] );
+					}
+					else
+					{
+						al_destroy_bitmap( bullets[i].getBitmap() );
+					}
+				}
+				bullets.clear();
+				for( int i = 0; i < newBullets.size(); i++ )
+				{
+					bullets.push_back( newBullets[i] );
+				}
+			}
+			
+			if( enemy_bullets.size() > 1 )
+			{
+				bool current_hit = false;
+				newEnemy_bullets.clear();
+				//vector<Bullet> newEnemy_bullets;
+				for( int i = 0; i < enemy_bullets.size(); i++ )
+				{
+					if( enemy_bullets[i].getY() < 0 || enemy_bullets[i].getY() > SCREEN_H || 
+						enemy_bullets[i].getX() < 0 || enemy_bullets[i].getX() > SCREEN_W )
+					{
+						al_destroy_bitmap( enemy_bullets[i].getBitmap() );
+					}
+					else
+					{						
+						if( enemy_bullets[i].getX() + BULLET_SIZE > character->getX() && 
+							enemy_bullets[i].getX() < character->getX() + CHAR_SIZE )
+						{
+							//cout << "HI" << endl;
+							if( enemy_bullets[i].getY() + BULLET_SIZE > character->getY() && enemy_bullets[i].getY() < character->getY() + CHAR_SIZE )
+							{
+								hit = true;
+								current_hit = true;
+								char_hit();
+							}
+						}
+						
+						if( !current_hit )
+						{
+							newEnemy_bullets.push_back( enemy_bullets[i] );
+						}
+					}
+					current_hit = false;
+				}
+				enemy_bullets.clear();
+				for( int i = 0; i < newEnemy_bullets.size(); i++ )
+				{
+					enemy_bullets.push_back( newEnemy_bullets[i] );
+				}
+			}
+				
 			
 			redraw = true;
 			
@@ -338,55 +526,19 @@ int main( int argc, char **argv )
 		{
 			redraw = false;
 			
+			if( dead ) init();
+			
 			al_set_target_bitmap( al_get_backbuffer( display ) );
 			
-			al_clear_to_color( al_map_rgb( 0,0,0 ) );
-			
-			//for getting rid of old bullets
-			if( bullets.size() > 0 && bullets[0].getY() < 0 )
+			if( hit )
 			{
-				newBullets.clear();
-				for( int i = 0; i < bullets.size(); i++ )
-				{
-					if( bullets[i].getY() > 0 )
-					{
-						newBullets.push_back( bullets[i] );
-					}
-					else
-					{
-						al_destroy_bitmap( bullets[i].getBitmap() );
-					}
-				}
-				bullets.clear();
-				for( int i = 0; i < newBullets.size(); i++ )
-				{
-					bullets.push_back( newBullets[i] );
-				}
+				al_clear_to_color( al_map_rgb( 150,0,0 ) );	
+				hit = false;
 			}
-			
-			if( enemy_bullets.size() > 100 )
+			else
 			{
-				newEnemy_bullets.clear();
-				//vector<Bullet> newEnemy_bullets;
-				for( int i = 0; i < enemy_bullets.size(); i++ )
-				{
-					if( enemy_bullets[i].getY() < 0 || enemy_bullets[i].getY() > SCREEN_H || 
-						enemy_bullets[i].getX() < 0 || enemy_bullets[i].getX() > SCREEN_W )
-					{
-						al_destroy_bitmap( enemy_bullets[i].getBitmap() );
-					}
-					else
-					{
-						newEnemy_bullets.push_back( enemy_bullets[i] );
-					}
-				}
-				enemy_bullets.clear();
-				for( int i = 0; i < newEnemy_bullets.size(); i++ )
-				{
-					enemy_bullets.push_back( newEnemy_bullets[i] );
-				}
+				al_clear_to_color( al_map_rgb( 0,0,0 ) );
 			}
-					
 					
 			
 			for( int i = 0; i < bullets.size(); i++ )
@@ -414,12 +566,15 @@ int main( int argc, char **argv )
 				al_draw_bitmap( enemies[i].getBitmap(), enemies[i].getX(), enemies[i].getY(), 0 );
 			}
 			
+			al_draw_bitmap( HEALTHBAR_BACKGROUND_BACKGROUND->getBitmap(), HEALTHBAR_BACKGROUND_BACKGROUND->getX(), HEALTHBAR_BACKGROUND_BACKGROUND->getY(), 0 );
+			al_draw_bitmap( HEALTHBAR_BACKGROUND->getBitmap(), HEALTHBAR_BACKGROUND->getX(), HEALTHBAR_BACKGROUND->getY(), 0 );
+			al_draw_bitmap( HEALTHBAR->getBitmap(), HEALTHBAR->getX(), HEALTHBAR->getY(), 0 );
+			
 			al_flip_display();
 		}
 	}
 	
 	al_destroy_bitmap( character->getBitmap() );
-	//al_destroy_bitmap( enemy->getBitmap() );
 	al_destroy_display( display );
 	al_destroy_event_queue( event_queue );
 	
