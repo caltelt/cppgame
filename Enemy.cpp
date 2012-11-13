@@ -19,6 +19,11 @@ public:
 		BULLET_TYPE = 0;
 	}
 	
+	//ALLEGRO_BITMAP* Bullet::getBitmap( void )
+	//{
+		//return bullet;
+	//}
+	
 	vector<Bullet> return_bullets( void )
 	{
 		return bullets;
@@ -44,14 +49,20 @@ public:
 		return HEALTH;
 	}
 	
-	void prepare_to_fire( void )
+	void prepare_to_fire( int i )
 	{
-		counter++;
+		COUNTER += i;
 	}
 	
 	int ready_to_fire( void )
 	{
-		return 1;
+		if( COUNTER > 1000 )
+		{
+			COUNTER = 0;
+			return 1;
+		}
+		return 0;
+	}
 	
 	
 };

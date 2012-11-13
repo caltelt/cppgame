@@ -22,16 +22,6 @@ public:
 	
 	bool isReadyBool;
 	
-	bool isReady( void )
-	{
-		if( bullet_x != NULL && bullet_y != NULL && bullet_dx != NULL && bullet_dy != NULL && bullet != NULL )
-		{
-			isReadyBool = true;
-		}
-		
-		return isReadyBool;
-	}
-	
 	Bullet( float x, float y, float dx, float dy )
 	{
 		isReadyBool = false;
@@ -52,14 +42,42 @@ public:
 		bullet_y = y;
 	}
 	
+	~Bullet( void )
+	{
+		if( bullet != NULL )
+		{
+			bullet = NULL;
+		}
+	}
+	
+	bool isReady( void )
+	{
+		if( bullet_x != NULL && bullet_y != NULL && bullet_dx != NULL && bullet_dy != NULL && bullet != NULL )
+		{
+			isReadyBool = true;
+		}
+		
+		return isReadyBool;
+	}
+	
 	void setBitmap( int x, int y )
 	{
 		bullet = al_create_bitmap( x, y );
 	}
 	
+	void setBitmap( ALLEGRO_BITMAP *img )
+	{
+		bullet = img;
+	}
+	
 	ALLEGRO_BITMAP* getBitmap( void )
 	{
 		return bullet;
+	}
+	
+	void print()
+	{
+		std::cout << "enemy" << bullet_x << bullet_y << std::endl;
 	}
 	
 	void setY( float y )
@@ -93,6 +111,16 @@ public:
 		bullet_dy = dy;
 	}
 	
+	void changeY( int y )
+	{
+		bullet_y += y;
+	}
+	
+	void changeX( int x )
+	{
+		bullet_x += x;
+	}			
+			
 	float getDX( void )
 	{
 		return bullet_dx;
